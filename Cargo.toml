@@ -1,0 +1,35 @@
+[workspace]
+members = ["contracts/erc20", "contracts/erc721"]
+default-members = ["contracts/erc20", "contracts/erc721"]
+
+# Explicitly set the resolver to version 2, which is the default for packages
+# with edition >= 2021.
+# https://doc.rust-lang.org/edition-guide/rust-2021/default-cargo-resolver.html
+resolver = "2"
+
+[workspace.package]
+authors = ["OpenZeppelin"]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+stylus-sdk = { version = "0.5.0", default-features = false }
+stylus-proc = { version = "0.5.0", default-features = false }
+mini-alloc = "0.4.2"
+alloy-primitives = { version = "0.3.1", default-features = false }
+alloy-sol-types = { version = "0.3.1", default-features = false }
+
+[profile.release]
+codegen-units = 1
+panic = "abort"
+opt-level = "z"
+strip = true
+lto = true
+debug = false
+rpath = false
+debug-assertions = false
+incremental = false
+
+[profile.dev]
+panic = "abort"

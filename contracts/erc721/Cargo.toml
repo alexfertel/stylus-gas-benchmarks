@@ -1,0 +1,16 @@
+[package]
+name = "erc721"
+version = "0.0.0"
+edition.workspace = true
+
+[dependencies]
+alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
+stylus-sdk.workspace = true
+mini-alloc.workspace = true
+
+[features]
+export-abi = ["stylus-sdk/export-abi"]
+
+[lib]
+crate-type = ["lib", "cdylib"]
