@@ -38,8 +38,9 @@ else
     exit 1
 fi
 
-# Initialize an associative array to store contract addresses
-declare -A contract_addresses
+# Initialize arrays to store contract names and addresses
+contract_names=()
+contract_addresses=()
 
 for dir in ./contracts/*/; do
     if [ -d "$dir" ]; then
@@ -48,11 +49,12 @@ for dir in ./contracts/*/; do
         echo "Deploying contract in $dir"
         cd "$dir"
         output=$(cargo stylus deploy -e $RPC_URL --private-key $PRIVATE_KEY)
-        address=$(echo "$output" | grep -oP 'Deploying program to address \K[0-9a-fA-F]+')
+        address=$(echo "$output" | grep 'deployed' | grep -oE '0x[a-fA-F0-9]+')
         if [ -n "$address" ]; then
             echo "Deployed contract address for $contract_name: $address"
-            # Store the address in the associative array
-            contract_addresses["$contract_name"]=$address
+            # Store the name and address in the arrays
+            contract_names+=("$contract_name")
+            contract_addresses+=("$address")
         else
             echo "Failed to deploy contract in $dir"
         fi
@@ -62,8 +64,8 @@ done
 
 # Print all stored addresses
 echo "Deployed contract addresses:"
-for contract in "${!contract_addresses[@]}"; do
-    echo "$contract: ${contract_addresses[$contract]}"
+for i in "${!contract_names[@]}"; do
+    echo "${contract_names[$i]}: ${contract_addresses[$i]}"
 done
 
 # Check and install Foundry
@@ -83,35 +85,60 @@ estimate_gas_for_contract() {
     echo "Estimating gas consumption for contract: $contract"
     echo "Contract address: $address"
     
-    # Define function signatures and their arguments for this contract
-    declare -A function_args
+    local functions=()
+    local args=()
+    
     case $contract in
         "erc20")
-            function_args=(
-                ["name()"]=""
-                ["symbol()"]=""
-                ["decimals()"]=""
-                ["totalSupply()"]=""
-                ["balanceOf(address)"]="0x1234567890123456789012345678901234567890"
-                ["transfer(address,uint256)"]="0x1234567890123456789012345678901234567890 100"
-                ["transferFrom(address,address,uint256)"]="0x1234567890123456789012345678901234567890 0x0987654321098765432109876543210987654321 100"
-                ["approve(address,uint256)"]="0x1234567890123456789012345678901234567890 100"
-                ["allowance(address,address)"]="0x1234567890123456789012345678901234567890 0x0987654321098765432109876543210987654321"
+            functions=(
+                "name()"
+                "symbol()"
+                "decimals()"
+                "totalSupply()"
+                "balanceOf(address)"
+                "transfer(address,uint256)"
+                "transferFrom(address,address,uint256)"
+                "approve(address,uint256)"
+                "allowance(address,address)"
+            )
+            args=(
+                ""
+                ""
+                ""
+                ""
+                "0x100d353062d922e769a34b9e95cd30495460e131"
+                "0x100d353062d922e769a34b9e95cd30495460e131 100"
+                "0x100d353062d922e769a34b9e95cd30495460e131 0x9f48b6948d6dab0d628e3e41f732fd8f22b1f395 100"
+                "0x100d353062d922e769a34b9e95cd30495460e131 100"
+                "0x100d353062d922e769a34b9e95cd30495460e131 0x9f48b6948d6dab0d628e3e41f732fd8f22b1f395"
             )
             ;;
         "erc721")
-            function_args=(
-                ["name()"]=""
-                ["symbol()"]=""
-                ["tokenURI(uint256)"]="1"
-                ["ownerOf(uint256)"]="1"
-                ["balanceOf(address)"]="0x1234567890123456789012345678901234567890"
-                ["transferFrom(address,address,uint256)"]="0x1234567890123456789012345678901234567890 0x0987654321098765432109876543210987654321 1"
-                ["safeTransferFrom(address,address,uint256)"]="0x1234567890123456789012345678901234567890 0x0987654321098765432109876543210987654321 1"
-                ["approve(address,uint256)"]="0x1234567890123456789012345678901234567890 1"
-                ["getApproved(uint256)"]="1"
-                ["setApprovalForAll(address,bool)"]="0x1234567890123456789012345678901234567890 true"
-                ["isApprovedForAll(address,address)"]="0x1234567890123456789012345678901234567890 0x0987654321098765432109876543210987654321"
+            functions=(
+                "name()"
+                "symbol()"
+                "tokenURI(uint256)"
+                "ownerOf(uint256)"
+                "balanceOf(address)"
+                "transferFrom(address,address,uint256)"
+                "safeTransferFrom(address,address,uint256)"
+                "approve(address,uint256)"
+                "getApproved(uint256)"
+                "setApprovalForAll(address,bool)"
+                "isApprovedForAll(address,address)"
+            )
+            args=(
+                ""
+                ""
+                "1"
+                "1"
+                "0x100d353062d922e769a34b9e95cd30495460e131"
+                "0x100d353062d922e769a34b9e95cd30495460e131 0x9f48b6948d6dab0d628e3e41f732fd8f22b1f395 1"
+                "0x100d353062d922e769a34b9e95cd30495460e131 0x9f48b6948d6dab0d628e3e41f732fd8f22b1f395 1"
+                "0x100d353062d922e769a34b9e95cd30495460e131 1"
+                "1"
+                "0x100d353062d922e769a34b9e95cd30495460e131 true"
+                "0x100d353062d922e769a34b9e95cd30495460e131 0x9f48b6948d6dab0d628e3e41f732fd8f22b1f395"
             )
             ;;
         *)
@@ -120,11 +147,12 @@ estimate_gas_for_contract() {
             ;;
     esac
     
-    for function in "${!function_args[@]}"; do
-        args=${function_args[$function]}
+    for i in "${!functions[@]}"; do
+        local function="${functions[$i]}"
+        local arg="${args[$i]}"
         
         # Estimate gas using cast
-        gas_estimate=$(cast estimate --rpc-url $RPC_URL $address "$function" $args 2>/dev/null)
+        gas_estimate=$(cast estimate --rpc-url $RPC_URL $address "$function" $arg 2>/dev/null)
         if [ $? -eq 0 ]; then
             echo "  $function: $gas_estimate gas"
         else
@@ -136,7 +164,10 @@ estimate_gas_for_contract() {
 
 # Estimate gas consumption for each deployed contract
 echo "Estimating gas consumption for deployed contracts:"
-for contract in "${!contract_addresses[@]}"; do
-    address=${contract_addresses[$contract]}
+for i in "${!contract_names[@]}"; do
+    contract="${contract_names[$i]}"
+    address="${contract_addresses[$i]}"
     estimate_gas_for_contract "$contract" "$address"
 done
+
+echo "Gas estimation completed."

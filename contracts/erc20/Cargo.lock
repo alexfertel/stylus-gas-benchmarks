@@ -192,16 +192,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "mini-alloc",
- "stylus-sdk",
-]
-
-[[package]]
-name = "erc721"
-version = "0.0.0"
-dependencies = [
- "alloy-primitives",
- "alloy-sol-types",
- "mini-alloc",
+ "stylus-proc",
  "stylus-sdk",
 ]
 
