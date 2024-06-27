@@ -64,53 +64,6 @@ impl Erc20 {
         evm::log(Transfer { from, to, value });
         Ok(())
     }
-
-    /// Mints `value` tokens to `address`
-    pub fn mint(&mut self, address: Address, value: U256) -> Result<(), Erc20Error> {
-        // Increasing balance
-        let mut balance = self.balances.setter(address);
-        let new_balance = balance.get() + value;
-        balance.set(new_balance);
-
-        // Increasing total supply
-        self.total_supply.set(self.total_supply.get() + value);
-
-        // Emitting the transfer event
-        evm::log(Transfer {
-            from: Address::ZERO,
-            to: address,
-            value,
-        });
-
-        Ok(())
-    }
-
-    /// Burns `value` tokens from `address`
-    pub fn burn(&mut self, address: Address, value: U256) -> Result<(), Erc20Error> {
-        // Decreasing balance
-        let mut balance = self.balances.setter(address);
-        let old_balance = balance.get();
-        if old_balance < value {
-            return Err(Erc20Error::InsufficientBalance(InsufficientBalance {
-                from: address,
-                have: old_balance,
-                want: value,
-            }));
-        }
-        balance.set(old_balance - value);
-
-        // Decreasing the total supply
-        self.total_supply.set(self.total_supply.get() - value);
-
-        // Emitting the transfer event
-        evm::log(Transfer {
-            from: address,
-            to: Address::ZERO,
-            value,
-        });
-
-        Ok(())
-    }
 }
 
 // These methods are external to other contracts
@@ -191,5 +144,52 @@ impl Erc20 {
     /// Returns the allowance of `spender` on `owner`'s tokens
     pub fn allowance(&self, owner: Address, spender: Address) -> U256 {
         self.allowances.getter(owner).get(spender)
+    }
+
+    /// Mints `value` tokens to `address`
+    pub fn mint(&mut self, address: Address, value: U256) -> Result<(), Erc20Error> {
+        // Increasing balance
+        let mut balance = self.balances.setter(address);
+        let new_balance = balance.get() + value;
+        balance.set(new_balance);
+
+        // Increasing total supply
+        self.total_supply.set(self.total_supply.get() + value);
+
+        // Emitting the transfer event
+        evm::log(Transfer {
+            from: Address::ZERO,
+            to: address,
+            value,
+        });
+
+        Ok(())
+    }
+
+    /// Burns `value` tokens from `address`
+    pub fn burn(&mut self, address: Address, value: U256) -> Result<(), Erc20Error> {
+        // Decreasing balance
+        let mut balance = self.balances.setter(address);
+        let old_balance = balance.get();
+        if old_balance < value {
+            return Err(Erc20Error::InsufficientBalance(InsufficientBalance {
+                from: address,
+                have: old_balance,
+                want: value,
+            }));
+        }
+        balance.set(old_balance - value);
+
+        // Decreasing the total supply
+        self.total_supply.set(self.total_supply.get() - value);
+
+        // Emitting the transfer event
+        evm::log(Transfer {
+            from: address,
+            to: Address::ZERO,
+            value,
+        });
+
+        Ok(())
     }
 }

@@ -1,0 +1,24 @@
+[package]
+name = "merkle_proof"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+stylus-sdk = { version = "0.5.0" }
+mini-alloc = "0.4.2"
+alloy-primitives = { version = "0.3.1", default-features = false }
+alloy-sol-types = { version = "0.3.1", default-features = false }
+crypto = { git = "https://github.com/OpenZeppelin/rust-contracts-stylus.git" }
+
+[features]
+export-abi = ["stylus-sdk/export-abi"]
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+panic = "abort"
+opt-level = "s"
